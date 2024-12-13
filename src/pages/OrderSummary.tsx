@@ -9,6 +9,13 @@ import { APIProvider, Map, Marker } from "@vis.gl/react-google-maps";
 import { useEffect, useState } from "react";
 import { MdConfirmationNumber } from "react-icons/md";
 import { useNavigate } from "react-router-dom";
+import {
+  format,
+  setHours,
+  setMinutes,
+  setSeconds,
+  isWithinInterval,
+} from "date-fns";
 const GOOGLE_MAPS_API_KEY = "";
 
 const OrderSummary = () => {
@@ -24,6 +31,41 @@ const OrderSummary = () => {
   });
 
   const navigate = useNavigate();
+
+  function generateRandomDates(
+    startDateStr?: string,
+    endDateStr?: string,
+    count: number = 3
+  ): string[] {
+    if (startDateStr && endDateStr) {
+      const randomDates: string[] = [];
+      const startDate: Date = new Date(startDateStr.replace(" ", "T"));
+      const endDate: Date = new Date(endDateStr.replace(" ", "T"));
+
+      for (let i = 0; i < count; i++) {
+        let randomDate: Date;
+
+        do {
+          const randomOffset: number =
+            Math.random() * (endDate.getTime() - startDate.getTime());
+          const randomDay: Date = new Date(startDate.getTime() + randomOffset);
+          const randomHour: number = Math.floor(Math.random() * (16 - 7) + 7);
+          const randomMinute: number = Math.floor(Math.random() * 60);
+          randomDate = setHours(
+            setMinutes(setSeconds(randomDay, 0), randomMinute),
+            randomHour
+          );
+        } while (
+          !isWithinInterval(randomDate, { start: startDate, end: endDate })
+        );
+        randomDates.push(format(randomDate, "yyyy-MM-dd HH:mm:ss"));
+      }
+
+      return randomDates;
+    } else {
+      return [""];
+    }
+  }
 
   useEffect(() => {
     const savedData = localStorage.getItem("order-detail");
@@ -103,7 +145,7 @@ const OrderSummary = () => {
                 Pilihan Tanggal
               </Label>
               <br />
-              <span className="text-[10px] text-gray-500">
+              <span className="text-sm font-medium text-gray-400 leading-[0]">
                 {detailData?.selectedDate
                   ? "(Terkonfirmasi oleh pelanggan)"
                   : "(Otomatis di sesuaikan dengan perkiraan cuaca dan jadwal)"}
@@ -115,15 +157,18 @@ const OrderSummary = () => {
               </p>
             ) : (
               <div>
-                <p className="text-ellipsis mb-1 line-clamp-1 text-sm">
-                  • 17 Des 2024 17:00
-                </p>
-                <p className="text-ellipsis mb-1 line-clamp-1 text-sm">
-                  • 18 Des 2024 10:00
-                </p>
-                <p className="text-ellipsis line-clamp-1 text-sm">
-                  • 18 Des 2024 13:00
-                </p>
+                {generateRandomDates(
+                  detailData?.startDate || "",
+                  detailData?.endDate || ""
+                ).map((el, indx) => (
+                  <p
+                    key={indx}
+                    className="text-ellipsis mb-1 line-clamp-1 text-sm"
+                  >
+                    • {el}
+                  </p>
+                ))}
+
                 <div className="flex justify-end">
                   <p className="text-ellipsis text-xs line-clamp-1 px-2 py-1 mt-2 border border-gray-300 rounded-full">
                     +3 Lainnya
